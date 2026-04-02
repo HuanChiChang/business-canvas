@@ -66,7 +66,7 @@ async function fetchUrlContent(url) {
 // ── Main analysis endpoint ─────────────────────────────────────────────────────
 app.post('/api/analyze', uploadFields, async (req, res) => {
   try {
-    const { companyName, url, myCompanyName, myCompanyUrl, myCompanyDesc, myFileText } = req.body;
+    const { companyName, url, myCompanyName, myCompanyUrl, myCompanyDesc, myFileText, targetFileText } = req.body;
     const targetFile = req.files?.file?.[0];
     const myFile = req.files?.myFile?.[0];
     const clientApiKey = process.env.ANTHROPIC_API_KEY;
@@ -108,6 +108,8 @@ app.post('/api/analyze', uploadFields, async (req, res) => {
       context += `\n上傳檔案名稱：${targetFile.originalname}\n`;
       const fileText = targetFile.buffer.toString('utf-8').slice(0, 6000);
       context += `檔案內容：\n${fileText}\n`;
+    } else if (targetFileText) {
+      context += `\n客戶資料文件內容：\n${targetFileText}\n`;
     }
 
     const systemPrompt = `你是一位資深商業顧問兼業務策略專家，擅長商業模式分析與業務開發。

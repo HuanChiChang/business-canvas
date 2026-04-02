@@ -624,6 +624,15 @@
 
     <div style="font-size:.8rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem;">🎯 目標客戶資訊</div>
 
+    <!-- Target profile selector -->
+    <div style="display:flex;gap:.5rem;margin-bottom:.875rem;">
+      <select id="targetProfileSelect" onchange="loadTargetProfile()" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.6rem .875rem;color:var(--text);font-size:.875rem;outline:none;cursor:pointer;">
+        <option value="">— 選擇已儲存的客戶資料 —</option>
+      </select>
+      <button onclick="saveTargetProfile()" style="padding:.6rem 1rem;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.8125rem;font-weight:600;cursor:pointer;white-space:nowrap;">💾 儲存</button>
+      <button onclick="deleteTargetProfile()" style="padding:.6rem .75rem;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--danger);font-size:.8125rem;cursor:pointer;" title="刪除選取的資料">🗑️</button>
+    </div>
+
     <!-- Input Tabs -->
     <div class="tabs" role="tablist">
       <button class="tab active" onclick="switchTab('url')" id="tab-url">🌐 網址</button>
@@ -811,8 +820,99 @@
     refreshProfileSelect();
     document.getElementById('myProfileSelect').value = '';
   }
+  // ── Target Profile Management ─────────────────────
+  const TARGET_PROFILES_KEY = 'targetCompanyProfiles';
+
+  function getTargetProfiles() {
+    return JSON.parse(localStorage.getItem(TARGET_PROFILES_KEY) || '[]');
+  }
+  function saveTargetProfiles(profiles) {
+    localStorage.setItem(TARGET_PROFILES_KEY, JSON.stringify(profiles));
+  }
+  function refreshTargetProfileSelect() {
+    const sel = document.getElementById('targetProfileSelect');
+    const current = sel.value;
+    sel.innerHTML = '<option value="">— 選擇已儲存的客戶資料 —</option>';
+    getTargetProfiles().forEach((p, i) => {
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = p.name || `客戶 ${i + 1}`;
+      sel.appendChild(opt);
+    });
+    if (current !== '') sel.value = current;
+  }
+  function loadTargetProfile() {
+    const idx = document.getElementById('targetProfileSelect').value;
+    if (idx === '') return;
+    const p = getTargetProfiles()[idx];
+    if (!p) return;
+    // Switch to appropriate tab and fill in
+    if (p.url) {
+      switchTab('url');
+      document.getElementById('companyUrl').value = p.url;
+    } else if (p.name) {
+      switchTab('name');
+      document.getElementById('companyName').value = p.name;
+    }
+    if (p.fileText) {
+      targetStoredFileText = p.fileText;
+      targetStoredFileName = p.fileName || '';
+      switchTab('file');
+      document.getElementById('fileName').textContent = '✅ ' + targetStoredFileName + '（已存）';
+      document.getElementById('fileName').classList.add('show');
+    }
+  }
+  function saveTargetProfile() {
+    const name = document.getElementById('companyName').value.trim()
+      || document.getElementById('companyUrl').value.trim();
+    if (!name) { alert('請先填入公司名稱或網址'); return; }
+    const profiles = getTargetProfiles();
+    const idx = document.getElementById('targetProfileSelect').value;
+    const profile = {
+      name: document.getElementById('companyName').value.trim(),
+      url: document.getElementById('companyUrl').value.trim(),
+      fileText: targetStoredFileText || '',
+      fileName: targetStoredFileName || ''
+    };
+    if (uploadedFile) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        profile.fileText = e.target.result.slice(0, 4000);
+        profile.fileName = uploadedFile.name;
+        targetStoredFileText = profile.fileText;
+        targetStoredFileName = profile.fileName;
+        if (idx !== '') { profiles[idx] = profile; } else { profiles.push(profile); }
+        saveTargetProfiles(profiles);
+        refreshTargetProfileSelect();
+        document.getElementById('targetProfileSelect').value = idx !== '' ? idx : profiles.length - 1;
+        alert(`✅ 已儲存「${profile.name || profile.url}」`);
+      };
+      reader.readAsText(uploadedFile);
+      return;
+    }
+    if (idx !== '') { profiles[idx] = profile; } else { profiles.push(profile); }
+    saveTargetProfiles(profiles);
+    refreshTargetProfileSelect();
+    document.getElementById('targetProfileSelect').value = idx !== '' ? idx : profiles.length - 1;
+    alert(`✅ 已儲存「${profile.name || profile.url}」`);
+  }
+  function deleteTargetProfile() {
+    const idx = document.getElementById('targetProfileSelect').value;
+    if (idx === '') { alert('請先選擇要刪除的資料'); return; }
+    const profiles = getTargetProfiles();
+    const label = profiles[idx]?.name || profiles[idx]?.url || '此資料';
+    if (!confirm(`確定刪除「${label}」？`)) return;
+    profiles.splice(idx, 1);
+    saveTargetProfiles(profiles);
+    refreshTargetProfileSelect();
+    document.getElementById('targetProfileSelect').value = '';
+  }
+
   // Init on load
-  document.addEventListener('DOMContentLoaded', refreshProfileSelect);
+  document.addEventListener('DOMContentLoaded', () => {
+    refreshProfileSelect();
+    refreshTargetProfileSelect();
+  });
 
   // ── State ─────────────────────────────────────────
   let currentTab = 'url';
@@ -820,6 +920,8 @@
   let myUploadedFile = null;
   let myStoredFileText = '';
   let myStoredFileName = '';
+  let targetStoredFileText = '';
+  let targetStoredFileName = '';
   let allQA = [];
 
   // ── Tab switching ─────────────────────────────────
@@ -924,6 +1026,7 @@
       if (currentTab === 'url') formData.append('url', url);
       if (currentTab === 'name') formData.append('companyName', companyName);
       if (currentTab === 'file' && uploadedFile) formData.append('file', uploadedFile);
+      else if (currentTab === 'file' && targetStoredFileText) formData.append('targetFileText', targetStoredFileText);
       if (myCompanyName) formData.append('myCompanyName', myCompanyName);
       if (myCompanyUrl) formData.append('myCompanyUrl', myCompanyUrl);
       if (myCompanyDesc) formData.append('myCompanyDesc', myCompanyDesc);
