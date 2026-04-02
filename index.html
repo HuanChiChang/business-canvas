@@ -62,10 +62,12 @@
     }
     .logo-icon {
       width: 40px; height: 40px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
       border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.25rem; flex-shrink: 0;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .logo-icon img {
+      width: 100%; height: 100%; object-fit: cover;
     }
     .logo-text h1 { font-size: 1.1rem; font-weight: 700; color: var(--text); }
     .logo-text p { font-size: .75rem; color: var(--text-muted); }
@@ -558,7 +560,7 @@
   <div class="container">
     <div class="header-inner">
       <div class="logo">
-        <div class="logo-icon">🧩</div>
+        <div class="logo-icon"><img src="icon.jpg" alt="gogochicken" /></div>
         <div class="logo-text">
           <h1>gogochicken Business Canvas AI</h1>
           <p>商業模式圖 × 業務破題問答產生器</p>
