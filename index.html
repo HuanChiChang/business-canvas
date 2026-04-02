@@ -542,10 +542,86 @@
 
     /* ── Print / Export styles ────────────────────── */
     @media print {
-      header, .input-card, .loading-section, .btn-export, .qa-filters { display: none !important; }
+      @page { size: A4 landscape; margin: 10mm; }
+
+      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
+      /* Hide UI */
+      header, .input-card, .loading-section, .btn-export, .qa-filters,
+      .hero, footer, .result-header { display: none !important; }
+
+      body { background: #fff !important; color: #000 !important; font-size: 9pt; }
+      main { padding: 0 !important; }
+
       #result-section { display: block !important; }
-      .qa-card-body { display: block !important; }
-      body { background: #fff; color: #000; }
+
+      /* ── Page 1: BMC ── */
+      .canvas-wrapper {
+        page-break-after: always;
+        break-after: page;
+        overflow: visible !important;
+        margin: 0 !important;
+      }
+      .section-title {
+        color: #000 !important;
+        font-size: 11pt !important;
+        margin-bottom: 4mm !important;
+      }
+      .section-title::after { display: none; }
+
+      /* BMC grid: fit one A4 landscape */
+      .canvas-grid {
+        min-width: unset !important;
+        width: 100% !important;
+        gap: 2mm !important;
+        grid-template-columns: 1.2fr 1fr 1.3fr 1fr 1.2fr !important;
+      }
+      .canvas-block {
+        border: 1px solid #999 !important;
+        background: #f8f8f8 !important;
+        border-radius: 3px !important;
+        padding: 3mm !important;
+      }
+      .canvas-block::before { height: 2px !important; background: #333 !important; }
+      .block-title { color: #333 !important; font-size: 6pt !important; }
+      .block-items li { color: #000 !important; font-size: 7pt !important; border-bottom: 1px solid #ddd !important; padding: 1mm 0 !important; }
+      .block-items li::before { color: #333 !important; }
+
+      /* ── Page 2: Q&A ── */
+      .qa-grid {
+        page-break-before: always;
+        break-before: page;
+        display: block !important;
+        columns: 2;
+        column-gap: 6mm;
+      }
+      .qa-card {
+        break-inside: avoid;
+        border: 1px solid #ccc !important;
+        background: #fff !important;
+        margin-bottom: 4mm !important;
+        border-radius: 3px !important;
+        display: inline-block;
+        width: 100%;
+      }
+      .qa-card-body { display: block !important; padding: 2mm 3mm 3mm !important; }
+      .qa-card-header { padding: 2mm 3mm !important; }
+      .qa-num { background: #333 !important; color: #fff !important; border-radius: 3px !important; font-size: 7pt !important; min-width: 18px !important; height: 18px !important; }
+      .qa-category { color: #333 !important; font-size: 6pt !important; }
+      .qa-question { color: #000 !important; font-size: 8pt !important; }
+      .qa-section-label { color: #555 !important; font-size: 6pt !important; margin: 1mm 0 .5mm !important; }
+      .qa-answer { background: #f5f5f5 !important; color: #000 !important; font-size: 7.5pt !important; padding: 1.5mm !important; border-radius: 2px !important; }
+      .qa-source { color: #444 !important; font-size: 7pt !important; border-left: 2px solid #333 !important; padding-left: 2mm !important; }
+      .qa-followup { color: #333 !important; font-size: 7pt !important; }
+      .qa-toggle { display: none !important; }
+
+      /* Q&A section title on page 2 */
+      .section-title[style*="margin-top"] {
+        page-break-before: always;
+        break-before: page;
+        padding-top: 0 !important;
+        margin-top: 0 !important;
+      }
     }
 
     /* ── Animations ───────────────────────────────── */
