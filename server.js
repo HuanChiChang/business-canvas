@@ -4,6 +4,7 @@ import fetch from 'node-fetch';
 import multer from 'multer';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { jsonrepair } from 'jsonrepair';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
@@ -175,16 +176,12 @@ qa 陣列必須包含至少 10 題，涵蓋：業務痛點(2題)、市場機會(
     try {
       parsed = JSON.parse(jsonMatch[0]);
     } catch (e) {
-      // Try to fix common JSON issues: unescaped control characters
-      const fixed = jsonMatch[0]
-        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '')  // Remove control chars
-        .replace(/(?<=:\s*"[^"]*)\n(?=[^"]*")/g, ' ')   // Replace literal newlines inside strings
-        .replace(/(?<=:\s*"[^"]*)\t(?=[^"]*")/g, ' ');  // Replace literal tabs inside strings
       try {
-        parsed = JSON.parse(fixed);
+        // Use jsonrepair to fix common JSON issues
+        const repaired = jsonrepair(jsonMatch[0]);
+        parsed = JSON.parse(repaired);
       } catch (e2) {
-        console.error('JSON parse failed:', e2.message);
-        console.error('Raw text (first 500):', fullText.slice(0, 500));
+        console.error('JSON repair failed:', e2.message);
         return res.status(500).json({ error: 'AI 回傳格式錯誤，請重試' });
       }
     }
