@@ -149,45 +149,30 @@ qa 陣列必須包含至少 10 題，涵蓋：業務痛點(2題)、市場機會(
 
     const userPrompt = `請分析以下公司資訊，生成商業模式圖與業務拜訪問題：\n\n${context}`;
 
-    // Stream response
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-
-    let fullText = '';
-
-    const stream = await client.messages.stream({
+    const message = await client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 4096,
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }]
     });
 
-    for await (const chunk of stream) {
-      if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
-        fullText += chunk.delta.text;
-        res.write(`data: ${JSON.stringify({ type: 'delta', text: chunk.delta.text })}\n\n`);
-      }
+    const fullText = message.content[0].text;
+    console.log('Raw response preview:', fullText.slice(0, 200));
+
+    // Strip markdown code fences if present
+    const cleaned = fullText
+      .replace(/```json\s*/gi, '')
+      .replace(/```\s*/g, '')
+      .trim();
+
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.error('No JSON found in response:', fullText.slice(0, 500));
+      return res.status(500).json({ error: 'AI 回傳格式錯誤，請重試' });
     }
 
-    // Parse and validate JSON
-    try {
-      // Strip markdown code fences if present
-      let cleaned = fullText
-        .replace(/```json\s*/gi, '')
-        .replace(/```\s*/g, '')
-        .trim();
-      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error('No JSON found');
-      const parsed = JSON.parse(jsonMatch[0]);
-      res.write(`data: ${JSON.stringify({ type: 'complete', data: parsed })}\n\n`);
-    } catch (e) {
-      console.error('JSON parse error:', e.message);
-      console.error('Raw response:', fullText.slice(0, 500));
-      res.write(`data: ${JSON.stringify({ type: 'error', message: '解析結果時發生錯誤，請重試' })}\n\n`);
-    }
-
-    res.end();
+    const parsed = JSON.parse(jsonMatch[0]);
+    res.json({ success: true, data: parsed });
   } catch (err) {
     console.error(err);
     if (!res.headersSent) {

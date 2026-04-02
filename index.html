@@ -774,38 +774,13 @@
       if (currentTab === 'file' && uploadedFile) formData.append('file', uploadedFile);
 
       const response = await fetch('/api/analyze', { method: 'POST', body: formData });
+      const result = await response.json();
 
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || '伺服器錯誤');
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || '伺服器錯誤，請重試');
       }
 
-      // Read SSE stream
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop();
-
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          try {
-            const msg = JSON.parse(line.slice(6));
-            if (msg.type === 'complete') {
-              renderResults(msg.data);
-            } else if (msg.type === 'error') {
-              throw new Error(msg.message);
-            }
-          } catch (e) {
-            if (e.message && !e.message.includes('JSON')) throw e;
-          }
-        }
-      }
+      renderResults(result.data);
     } catch (err) {
       showError(err.message || '發生錯誤，請重試');
       document.getElementById('loadingSection').classList.remove('show');
