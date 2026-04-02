@@ -172,11 +172,18 @@ qa 陣列必須包含至少 10 題，涵蓋：業務痛點(2題)、市場機會(
 
     // Parse and validate JSON
     try {
-      const jsonMatch = fullText.match(/\{[\s\S]*\}/);
+      // Strip markdown code fences if present
+      let cleaned = fullText
+        .replace(/```json\s*/gi, '')
+        .replace(/```\s*/g, '')
+        .trim();
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
       if (!jsonMatch) throw new Error('No JSON found');
       const parsed = JSON.parse(jsonMatch[0]);
       res.write(`data: ${JSON.stringify({ type: 'complete', data: parsed })}\n\n`);
     } catch (e) {
+      console.error('JSON parse error:', e.message);
+      console.error('Raw response:', fullText.slice(0, 500));
       res.write(`data: ${JSON.stringify({ type: 'error', message: '解析結果時發生錯誤，請重試' })}\n\n`);
     }
 
