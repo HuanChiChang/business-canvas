@@ -88,6 +88,7 @@ app.post('/api/analyze', upload.single('file'), async (req, res) => {
 
     const systemPrompt = `你是一位資深商業顧問兼業務策略專家，擅長商業模式分析與業務開發。
 請根據提供的公司資訊，進行深度分析並以 JSON 格式回覆，不要輸出任何 JSON 以外的文字。
+重要：所有 JSON 字串值中不得包含未跳脫的雙引號、換行符或其他控制字元。請使用完整合法的 JSON 格式。
 
 JSON 結構必須完全符合以下格式：
 {
@@ -157,7 +158,6 @@ qa 陣列必須包含至少 10 題，涵蓋：業務痛點(2題)、市場機會(
     });
 
     const fullText = message.content[0].text;
-    console.log('Raw response preview:', fullText.slice(0, 200));
 
     // Strip markdown code fences if present
     const cleaned = fullText
@@ -167,11 +167,28 @@ qa 陣列必須包含至少 10 題，涵蓋：業務痛點(2題)、市場機會(
 
     const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      console.error('No JSON found in response:', fullText.slice(0, 500));
+      console.error('No JSON found in response');
       return res.status(500).json({ error: 'AI 回傳格式錯誤，請重試' });
     }
 
-    const parsed = JSON.parse(jsonMatch[0]);
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonMatch[0]);
+    } catch (e) {
+      // Try to fix common JSON issues: unescaped control characters
+      const fixed = jsonMatch[0]
+        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '')  // Remove control chars
+        .replace(/(?<=:\s*"[^"]*)\n(?=[^"]*")/g, ' ')   // Replace literal newlines inside strings
+        .replace(/(?<=:\s*"[^"]*)\t(?=[^"]*")/g, ' ');  // Replace literal tabs inside strings
+      try {
+        parsed = JSON.parse(fixed);
+      } catch (e2) {
+        console.error('JSON parse failed:', e2.message);
+        console.error('Raw text (first 500):', fullText.slice(0, 500));
+        return res.status(500).json({ error: 'AI 回傳格式錯誤，請重試' });
+      }
+    }
+
     res.json({ success: true, data: parsed });
   } catch (err) {
     console.error(err);
