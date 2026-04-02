@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>商業模式圖產生器 | Business Canvas AI</title>
+  <style>
+    /* ── Reset & Base ─────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f0f13;
+      --surface: #1a1a24;
+      --surface2: #22222f;
+      --border: #2e2e42;
+      --accent: #6c63ff;
+      --accent2: #a78bfa;
+      --accent-glow: rgba(108,99,255,.25);
+      --text: #e8e8f0;
+      --text-muted: #8888aa;
+      --success: #34d399;
+      --warning: #fbbf24;
+      --danger: #f87171;
+      /* Canvas block colors */
+      --c-partner: #4f46e5;
+      --c-activity: #7c3aed;
+      --c-resource: #6d28d9;
+      --c-value: #0e7490;
+      --c-relation: #0f766e;
+      --c-channel: #047857;
+      --c-segment: #065f46;
+      --c-cost: #92400e;
+      --c-revenue: #b45309;
+      --radius: 12px;
+      --shadow: 0 4px 24px rgba(0,0,0,.4);
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* ── Layout ───────────────────────────────────── */
+    .container { max-width: 1400px; margin: 0 auto; padding: 0 1.5rem; }
+
+    /* ── Header ───────────────────────────────────── */
+    header {
+      background: linear-gradient(135deg, #1a1a24 0%, #12121a 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 1.5rem 0;
+      position: sticky; top: 0; z-index: 100;
+      backdrop-filter: blur(12px);
+    }
+    .header-inner {
+      display: flex; align-items: center; gap: 1rem;
+      justify-content: space-between;
+    }
+    .logo {
+      display: flex; align-items: center; gap: .75rem;
+    }
+    .logo-icon {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.25rem; flex-shrink: 0;
+    }
+    .logo-text h1 { font-size: 1.1rem; font-weight: 700; color: var(--text); }
+    .logo-text p { font-size: .75rem; color: var(--text-muted); }
+    .badge {
+      background: var(--accent-glow);
+      border: 1px solid var(--accent);
+      color: var(--accent2);
+      padding: .25rem .75rem;
+      border-radius: 999px;
+      font-size: .75rem;
+      font-weight: 600;
+    }
+
+    /* ── Hero ─────────────────────────────────────── */
+    .hero {
+      text-align: center;
+      padding: 4rem 1rem 3rem;
+    }
+    .hero h2 {
+      font-size: clamp(1.8rem, 4vw, 3rem);
+      font-weight: 800;
+      background: linear-gradient(135deg, #fff 30%, var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: .75rem;
+    }
+    .hero p { color: var(--text-muted); font-size: 1rem; max-width: 560px; margin: 0 auto; }
+
+    /* ── Input Card ───────────────────────────────── */
+    .input-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 2rem;
+      max-width: 720px;
+      margin: 0 auto 3rem;
+      box-shadow: var(--shadow);
+    }
+
+    /* Tabs */
+    .tabs { display: flex; gap: .5rem; margin-bottom: 1.5rem; background: var(--bg); border-radius: var(--radius); padding: .25rem; }
+    .tab {
+      flex: 1; padding: .6rem 1rem;
+      border-radius: 8px;
+      border: none; background: transparent;
+      color: var(--text-muted);
+      cursor: pointer; font-size: .875rem; font-weight: 500;
+      transition: all .2s;
+      display: flex; align-items: center; justify-content: center; gap: .4rem;
+    }
+    .tab.active { background: var(--surface2); color: var(--text); box-shadow: 0 2px 8px rgba(0,0,0,.3); }
+    .tab:hover:not(.active) { color: var(--text); }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Form elements */
+    .form-group { margin-bottom: 1.25rem; }
+    label { display: block; font-size: .875rem; font-weight: 600; color: var(--text-muted); margin-bottom: .5rem; }
+    input[type="text"], input[type="url"], input[type="password"] {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: .75rem 1rem;
+      color: var(--text);
+      font-size: .9375rem;
+      transition: border-color .2s, box-shadow .2s;
+      outline: none;
+    }
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+    input::placeholder { color: var(--text-muted); }
+
+    /* File upload */
+    .file-drop {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 2.5rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all .2s;
+      position: relative;
+    }
+    .file-drop:hover, .file-drop.dragover {
+      border-color: var(--accent);
+      background: var(--accent-glow);
+    }
+    .file-drop input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer;
+    }
+    .file-drop-icon { font-size: 2rem; margin-bottom: .5rem; }
+    .file-drop p { color: var(--text-muted); font-size: .875rem; }
+    .file-drop strong { color: var(--accent2); }
+    .file-name {
+      display: none;
+      margin-top: .75rem;
+      padding: .5rem .75rem;
+      background: var(--surface2);
+      border-radius: 8px;
+      font-size: .8125rem;
+      color: var(--success);
+    }
+    .file-name.show { display: block; }
+
+    /* API Key hint */
+    .api-hint {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: .875rem 1rem;
+      margin-bottom: 1.25rem;
+      font-size: .8125rem;
+      color: var(--text-muted);
+      display: flex; gap: .5rem; align-items: flex-start;
+    }
+    .api-hint a { color: var(--accent2); text-decoration: none; }
+    .api-hint a:hover { text-decoration: underline; }
+
+    /* CTA Button */
+    .btn-generate {
+      width: 100%;
+      padding: .875rem;
+      background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .2s;
+      display: flex; align-items: center; justify-content: center; gap: .5rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-generate::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,.1), transparent);
+      opacity: 0;
+      transition: opacity .2s;
+    }
+    .btn-generate:hover:not(:disabled)::before { opacity: 1; }
+    .btn-generate:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 24px var(--accent-glow); }
+    .btn-generate:active { transform: translateY(0); }
+    .btn-generate:disabled { opacity: .6; cursor: not-allowed; }
+
+    /* ── Loading ──────────────────────────────────── */
+    .loading-section {
+      display: none;
+      text-align: center;
+      padding: 3rem 1rem;
+    }
+    .loading-section.show { display: block; }
+    .spinner {
+      width: 56px; height: 56px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 1.5rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-steps { list-style: none; text-align: left; max-width: 300px; margin: 1.5rem auto 0; }
+    .loading-steps li {
+      padding: .4rem 0;
+      color: var(--text-muted);
+      font-size: .875rem;
+      display: flex; align-items: center; gap: .5rem;
+      transition: color .3s;
+    }
+    .loading-steps li.done { color: var(--success); }
+    .loading-steps li.active { color: var(--text); }
+    .step-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--border); flex-shrink: 0;
+      transition: background .3s;
+    }
+    .loading-steps li.done .step-dot { background: var(--success); }
+    .loading-steps li.active .step-dot { background: var(--accent); animation: pulse 1s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+    /* ── Results ──────────────────────────────────── */
+    #result-section { display: none; }
+    #result-section.show { display: block; }
+
+    .result-header {
+      display: flex; flex-wrap: wrap;
+      align-items: center; justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      padding: 1.5rem 2rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+    }
+    .result-company h3 {
+      font-size: 1.5rem; font-weight: 800;
+      background: linear-gradient(135deg, #fff, var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .result-company p { color: var(--text-muted); font-size: .875rem; margin-top: .25rem; }
+    .result-company .industry-tag {
+      display: inline-block;
+      margin-top: .5rem;
+      background: var(--accent-glow);
+      border: 1px solid var(--accent);
+      color: var(--accent2);
+      padding: .2rem .75rem;
+      border-radius: 999px;
+      font-size: .75rem;
+    }
+    .btn-export {
+      display: flex; align-items: center; gap: .4rem;
+      padding: .6rem 1.25rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      cursor: pointer;
+      font-size: .875rem;
+      font-weight: 600;
+      transition: all .2s;
+      text-decoration: none;
+    }
+    .btn-export:hover { border-color: var(--accent); color: var(--accent2); }
+
+    /* Section titles */
+    .section-title {
+      font-size: 1.25rem; font-weight: 800;
+      margin-bottom: 1.25rem;
+      display: flex; align-items: center; gap: .5rem;
+    }
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(to right, var(--border), transparent);
+    }
+
+    /* ── Business Model Canvas Grid ───────────────── */
+    .canvas-wrapper {
+      margin-bottom: 3rem;
+      overflow-x: auto;
+    }
+    .canvas-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr 1.3fr 1fr 1.2fr;
+      grid-template-rows: auto auto auto;
+      gap: .75rem;
+      min-width: 900px;
+    }
+
+    .canvas-block {
+      border-radius: var(--radius);
+      padding: 1rem 1.1rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .canvas-block::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 3px;
+    }
+    .canvas-block.partner    { background: rgba(79,70,229,.15); border: 1px solid rgba(79,70,229,.35); grid-column: 1; grid-row: 1/3; }
+    .canvas-block.partner::before { background: var(--c-partner); }
+
+    .canvas-block.activity   { background: rgba(124,58,237,.15); border: 1px solid rgba(124,58,237,.35); grid-column: 2; grid-row: 1; }
+    .canvas-block.activity::before { background: var(--c-activity); }
+
+    .canvas-block.resource   { background: rgba(109,40,217,.15); border: 1px solid rgba(109,40,217,.35); grid-column: 2; grid-row: 2; }
+    .canvas-block.resource::before { background: var(--c-resource); }
+
+    .canvas-block.value      { background: rgba(14,116,144,.15); border: 1px solid rgba(14,116,144,.35); grid-column: 3; grid-row: 1/3; }
+    .canvas-block.value::before { background: var(--c-value); }
+
+    .canvas-block.relation   { background: rgba(15,118,110,.15); border: 1px solid rgba(15,118,110,.35); grid-column: 4; grid-row: 1; }
+    .canvas-block.relation::before { background: var(--c-relation); }
+
+    .canvas-block.channel    { background: rgba(4,120,87,.15); border: 1px solid rgba(4,120,87,.35); grid-column: 4; grid-row: 2; }
+    .canvas-block.channel::before { background: var(--c-channel); }
+
+    .canvas-block.segment    { background: rgba(6,95,70,.15); border: 1px solid rgba(6,95,70,.35); grid-column: 5; grid-row: 1/3; }
+    .canvas-block.segment::before { background: var(--c-segment); }
+
+    .canvas-block.cost       { background: rgba(146,64,14,.15); border: 1px solid rgba(146,64,14,.35); grid-column: 1/3; grid-row: 3; }
+    .canvas-block.cost::before { background: var(--c-cost); }
+
+    .canvas-block.revenue    { background: rgba(180,83,9,.15); border: 1px solid rgba(180,83,9,.35); grid-column: 3/6; grid-row: 3; }
+    .canvas-block.revenue::before { background: var(--c-revenue); }
+
+    .block-header {
+      display: flex; align-items: center; gap: .4rem;
+      margin-bottom: .75rem;
+    }
+    .block-icon { font-size: 1rem; }
+    .block-title {
+      font-size: .7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--text-muted);
+    }
+    .block-items { list-style: none; }
+    .block-items li {
+      font-size: .8125rem;
+      color: var(--text);
+      padding: .3rem 0;
+      border-bottom: 1px solid rgba(255,255,255,.04);
+      display: flex; gap: .4rem;
+      line-height: 1.4;
+    }
+    .block-items li:last-child { border-bottom: none; }
+    .block-items li::before {
+      content: '›';
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    /* Mobile canvas: single column */
+    @media (max-width: 768px) {
+      .canvas-grid {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto;
+        min-width: unset;
+      }
+      .canvas-block { grid-column: auto !important; grid-row: auto !important; }
+    }
+
+    /* ── Q&A Section ──────────────────────────────── */
+    .qa-filters {
+      display: flex; flex-wrap: wrap; gap: .5rem;
+      margin-bottom: 1.5rem;
+    }
+    .filter-btn {
+      padding: .4rem .9rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: .8125rem;
+      font-weight: 500;
+      transition: all .2s;
+    }
+    .filter-btn.active, .filter-btn:hover {
+      border-color: var(--accent);
+      background: var(--accent-glow);
+      color: var(--accent2);
+    }
+
+    .qa-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 1rem;
+    }
+    .qa-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: border-color .2s, transform .2s;
+    }
+    .qa-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+    .qa-card-header {
+      padding: 1rem 1.1rem .75rem;
+      cursor: pointer;
+      display: flex; gap: .75rem; align-items: flex-start;
+    }
+    .qa-num {
+      min-width: 28px; height: 28px;
+      background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .75rem; font-weight: 700; flex-shrink: 0;
+    }
+    .qa-meta { flex: 1; }
+    .qa-category {
+      display: inline-block;
+      font-size: .7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--accent2);
+      margin-bottom: .3rem;
+    }
+    .qa-question {
+      font-size: .9375rem;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .qa-toggle {
+      width: 24px; height: 24px;
+      background: var(--surface2);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .75rem;
+      flex-shrink: 0;
+      transition: transform .2s;
+    }
+    .qa-card.open .qa-toggle { transform: rotate(180deg); }
+
+    .qa-card-body {
+      display: none;
+      padding: 0 1.1rem 1.1rem;
+      border-top: 1px solid var(--border);
+      margin-top: .5rem;
+    }
+    .qa-card.open .qa-card-body { display: block; }
+    .qa-section-label {
+      font-size: .7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: var(--text-muted);
+      margin: .875rem 0 .35rem;
+    }
+    .qa-section-label:first-child { margin-top: .875rem; }
+    .qa-answer {
+      font-size: .875rem;
+      color: var(--text);
+      line-height: 1.6;
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: .75rem;
+    }
+    .qa-source {
+      font-size: .8125rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      border-left: 2px solid var(--accent);
+      padding-left: .75rem;
+    }
+    .qa-followup {
+      font-size: .8125rem;
+      color: var(--accent2);
+      font-style: italic;
+    }
+
+    /* ── Error ────────────────────────────────────── */
+    .error-box {
+      display: none;
+      background: rgba(248,113,113,.1);
+      border: 1px solid rgba(248,113,113,.4);
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+      color: var(--danger);
+      margin-bottom: 1rem;
+      font-size: .875rem;
+      align-items: center; gap: .5rem;
+    }
+    .error-box.show { display: flex; }
+
+    /* ── Footer ───────────────────────────────────── */
+    footer {
+      text-align: center;
+      padding: 2rem 1rem;
+      color: var(--text-muted);
+      font-size: .8125rem;
+      border-top: 1px solid var(--border);
+      margin-top: 4rem;
+    }
+
+    /* ── Print / Export styles ────────────────────── */
+    @media print {
+      header, .input-card, .loading-section, .btn-export, .qa-filters { display: none !important; }
+      #result-section { display: block !important; }
+      .qa-card-body { display: block !important; }
+      body { background: #fff; color: #000; }
+    }
+
+    /* ── Animations ───────────────────────────────── */
+    .fade-in { animation: fadeIn .4s ease both; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="container">
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-icon">🧩</div>
+        <div class="logo-text">
+          <h1>Business Canvas AI</h1>
+          <p>商業模式圖 × 業務破題問答產生器</p>
+        </div>
+      </div>
+      <span class="badge">Powered by Claude AI</span>
+    </div>
+  </div>
+</header>
+
+<!-- Main -->
+<main class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <h2>秒懂客戶商業模式<br>第一次拜訪就破冰</h2>
+    <p>輸入公司名稱、官網網址或上傳資料，AI 自動生成商業模式圖與業務破題問答</p>
+  </div>
+
+  <!-- Input Card -->
+  <div class="input-card">
+    <div class="error-box" id="errorBox">
+      <span>⚠️</span> <span id="errorMsg"></span>
+    </div>
+
+    <!-- API Key -->
+    <div class="form-group">
+      <label>Claude API Key <span style="color:var(--danger)">*</span></label>
+      <div class="api-hint">
+        <span>🔑</span>
+        <span>請輸入您的 Anthropic API Key（<a href="https://console.anthropic.com" target="_blank">前往取得</a>）。Key 僅在本機使用，不會儲存或上傳。</span>
+      </div>
+      <input type="password" id="apiKey" placeholder="sk-ant-..." />
+    </div>
+
+    <!-- Input Tabs -->
+    <div class="tabs" role="tablist">
+      <button class="tab active" onclick="switchTab('url')" id="tab-url">🌐 網址</button>
+      <button class="tab" onclick="switchTab('name')" id="tab-name">🏢 公司名稱</button>
+      <button class="tab" onclick="switchTab('file')" id="tab-file">📄 上傳檔案</button>
+    </div>
+
+    <!-- Tab: URL -->
+    <div class="tab-content active" id="content-url">
+      <div class="form-group">
+        <label>公司官網網址</label>
+        <input type="url" id="companyUrl" placeholder="https://www.example.com" />
+      </div>
+    </div>
+
+    <!-- Tab: Name -->
+    <div class="tab-content" id="content-name">
+      <div class="form-group">
+        <label>公司名稱</label>
+        <input type="text" id="companyName" placeholder="例如：台積電、統一超商、Tesla..." />
+      </div>
+    </div>
+
+    <!-- Tab: File -->
+    <div class="tab-content" id="content-file">
+      <div class="form-group">
+        <label>上傳公司相關文件</label>
+        <div class="file-drop" id="fileDrop">
+          <input type="file" id="fileInput" accept=".txt,.pdf,.html,.doc,.docx" />
+          <div class="file-drop-icon">📎</div>
+          <p><strong>點擊選擇</strong>或拖曳檔案至此</p>
+          <p style="margin-top:.25rem;font-size:.75rem">支援 PDF、TXT、DOC、DOCX、HTML（最大 10MB）</p>
+          <div class="file-name" id="fileName"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Generate Button -->
+    <button class="btn-generate" id="generateBtn" onclick="generate()">
+      <span>✨</span> <span>生成商業模式圖與業務問答</span>
+    </button>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-section" id="loadingSection">
+    <div class="spinner"></div>
+    <p style="font-size:1rem;font-weight:600;color:var(--text)">AI 正在分析中，請稍候…</p>
+    <p style="font-size:.875rem;color:var(--text-muted);margin-top:.5rem">這可能需要 15-30 秒</p>
+    <ul class="loading-steps" id="loadingSteps">
+      <li class="active" id="step1"><span class="step-dot"></span>取得公司資訊</li>
+      <li id="step2"><span class="step-dot"></span>分析商業模式</li>
+      <li id="step3"><span class="step-dot"></span>生成 9 大模塊</li>
+      <li id="step4"><span class="step-dot"></span>設計業務問答</li>
+      <li id="step5"><span class="step-dot"></span>整理輸出結果</li>
+    </ul>
+  </div>
+
+  <!-- Results -->
+  <div id="result-section">
+
+    <!-- Company Header -->
+    <div class="result-header fade-in">
+      <div class="result-company">
+        <h3 id="resCompanyName">—</h3>
+        <p id="resOverview">—</p>
+        <span class="industry-tag" id="resIndustry">—</span>
+      </div>
+      <div style="display:flex;gap:.75rem;flex-wrap:wrap;">
+        <button class="btn-export" onclick="exportPDF()">🖨️ 列印 / 匯出 PDF</button>
+        <button class="btn-export" onclick="resetPage()">↩️ 重新查詢</button>
+      </div>
+    </div>
+
+    <!-- Business Model Canvas -->
+    <div class="section-title fade-in">🧩 商業模式圖（Business Model Canvas）</div>
+    <div class="canvas-wrapper fade-in">
+      <div class="canvas-grid" id="canvasGrid">
+        <!-- Dynamically filled -->
+      </div>
+    </div>
+
+    <!-- Q&A -->
+    <div class="section-title fade-in" style="margin-top:2.5rem">💬 第一次業務拜訪破題問答（≥ 10 題）</div>
+    <div class="qa-filters fade-in" id="qaFilters">
+      <button class="filter-btn active" onclick="filterQA('all', this)">全部</button>
+    </div>
+    <div class="qa-grid fade-in" id="qaGrid">
+      <!-- Dynamically filled -->
+    </div>
+
+  </div>
+
+</main>
+
+<footer>
+  <p>Business Canvas AI &nbsp;·&nbsp; Powered by Claude claude-sonnet-4-6 &nbsp;·&nbsp; 分析結果僅供參考，請依實際情況調整</p>
+</footer>
+
+<script>
+  // ── State ─────────────────────────────────────────
+  let currentTab = 'url';
+  let uploadedFile = null;
+  let allQA = [];
+
+  // ── Tab switching ─────────────────────────────────
+  function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    document.getElementById('content-' + tab).classList.add('active');
+  }
+
+  // ── File drop ─────────────────────────────────────
+  const fileDrop = document.getElementById('fileDrop');
+  const fileInput = document.getElementById('fileInput');
+  const fileNameEl = document.getElementById('fileName');
+
+  fileDrop.addEventListener('dragover', e => { e.preventDefault(); fileDrop.classList.add('dragover'); });
+  fileDrop.addEventListener('dragleave', () => fileDrop.classList.remove('dragover'));
+  fileDrop.addEventListener('drop', e => {
+    e.preventDefault();
+    fileDrop.classList.remove('dragover');
+    if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) handleFile(fileInput.files[0]);
+  });
+
+  function handleFile(f) {
+    uploadedFile = f;
+    fileNameEl.textContent = '✅ ' + f.name + ' (' + (f.size / 1024).toFixed(1) + ' KB)';
+    fileNameEl.classList.add('show');
+  }
+
+  // ── Error display ─────────────────────────────────
+  function showError(msg) {
+    const box = document.getElementById('errorBox');
+    document.getElementById('errorMsg').textContent = msg;
+    box.classList.add('show');
+  }
+  function hideError() {
+    document.getElementById('errorBox').classList.remove('show');
+  }
+
+  // ── Loading steps ─────────────────────────────────
+  let stepTimer;
+  function startLoadingSteps() {
+    const steps = ['step1','step2','step3','step4','step5'];
+    let i = 0;
+    function next() {
+      if (i > 0) {
+        document.getElementById(steps[i-1]).className = 'done';
+      }
+      if (i < steps.length) {
+        document.getElementById(steps[i]).className = 'active';
+        i++;
+        stepTimer = setTimeout(next, 4000);
+      }
+    }
+    next();
+  }
+  function stopLoadingSteps() { clearTimeout(stepTimer); }
+
+  // ── Main generate ─────────────────────────────────
+  async function generate() {
+    hideError();
+    const apiKey = document.getElementById('apiKey').value.trim();
+    const url = document.getElementById('companyUrl').value.trim();
+    const companyName = document.getElementById('companyName').value.trim();
+
+    if (!apiKey) { showError('請輸入 Claude API Key'); return; }
+    if (currentTab === 'url' && !url) { showError('請輸入公司網址'); return; }
+    if (currentTab === 'name' && !companyName) { showError('請輸入公司名稱'); return; }
+    if (currentTab === 'file' && !uploadedFile) { showError('請上傳檔案'); return; }
+
+    // UI state
+    document.getElementById('generateBtn').disabled = true;
+    document.getElementById('loadingSection').classList.add('show');
+    document.getElementById('result-section').classList.remove('show');
+    window.scrollTo({ top: document.getElementById('loadingSection').offsetTop - 100, behavior: 'smooth' });
+    startLoadingSteps();
+
+    try {
+      const formData = new FormData();
+      formData.append('apiKey', apiKey);
+      if (currentTab === 'url') formData.append('url', url);
+      if (currentTab === 'name') formData.append('companyName', companyName);
+      if (currentTab === 'file' && uploadedFile) formData.append('file', uploadedFile);
+
+      const response = await fetch('/api/analyze', { method: 'POST', body: formData });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || '伺服器錯誤');
+      }
+
+      // Read SSE stream
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          try {
+            const msg = JSON.parse(line.slice(6));
+            if (msg.type === 'complete') {
+              renderResults(msg.data);
+            } else if (msg.type === 'error') {
+              throw new Error(msg.message);
+            }
+          } catch (e) {
+            if (e.message && !e.message.includes('JSON')) throw e;
+          }
+        }
+      }
+    } catch (err) {
+      showError(err.message || '發生錯誤，請重試');
+      document.getElementById('loadingSection').classList.remove('show');
+    } finally {
+      stopLoadingSteps();
+      document.getElementById('generateBtn').disabled = false;
+    }
+  }
+
+  // ── Render BMC ─────────────────────────────────────
+  const CANVAS_CONFIG = [
+    { key: 'keyPartnerships',    cls: 'partner',  icon: '🤝' },
+    { key: 'keyActivities',      cls: 'activity', icon: '⚙️' },
+    { key: 'valuePropositions',  cls: 'value',    icon: '💎' },
+    { key: 'customerRelationships', cls: 'relation', icon: '❤️' },
+    { key: 'customerSegments',   cls: 'segment',  icon: '👥' },
+    { key: 'keyResources',       cls: 'resource', icon: '🏗️' },
+    { key: 'channels',           cls: 'channel',  icon: '📡' },
+    { key: 'costStructure',      cls: 'cost',     icon: '💰' },
+    { key: 'revenueStreams',      cls: 'revenue',  icon: '📈' },
+  ];
+
+  function renderResults(data) {
+    document.getElementById('loadingSection').classList.remove('show');
+
+    // Header
+    document.getElementById('resCompanyName').textContent = data.companyName || '—';
+    document.getElementById('resOverview').textContent = data.companyOverview || '—';
+    document.getElementById('resIndustry').textContent = data.industry || '—';
+
+    // Canvas
+    const grid = document.getElementById('canvasGrid');
+    grid.innerHTML = '';
+    CANVAS_CONFIG.forEach(({ key, cls, icon }) => {
+      const block = data.canvas[key];
+      if (!block) return;
+      const el = document.createElement('div');
+      el.className = `canvas-block ${cls}`;
+      el.innerHTML = `
+        <div class="block-header">
+          <span class="block-icon">${icon}</span>
+          <span class="block-title">${block.title}</span>
+        </div>
+        <ul class="block-items">
+          ${(block.items || []).map(item => `<li>${item}</li>`).join('')}
+        </ul>`;
+      grid.appendChild(el);
+    });
+
+    // Q&A
+    allQA = data.qa || [];
+    renderQA(allQA);
+    buildFilters(allQA);
+
+    // Show results
+    const sec = document.getElementById('result-section');
+    sec.classList.add('show');
+    setTimeout(() => {
+      sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  }
+
+  function renderQA(list) {
+    const grid = document.getElementById('qaGrid');
+    grid.innerHTML = '';
+    list.forEach((qa, idx) => {
+      const card = document.createElement('div');
+      card.className = 'qa-card';
+      card.dataset.category = qa.category || '';
+      card.innerHTML = `
+        <div class="qa-card-header" onclick="toggleQA(this)">
+          <div class="qa-num">${qa.id || idx + 1}</div>
+          <div class="qa-meta">
+            <div class="qa-category">${qa.category || '業務技巧'}</div>
+            <div class="qa-question">${qa.question}</div>
+          </div>
+          <div class="qa-toggle">▼</div>
+        </div>
+        <div class="qa-card-body">
+          <div class="qa-section-label">💡 建議引導方向</div>
+          <div class="qa-answer">${qa.suggestedAnswer || '—'}</div>
+          ${qa.followUp ? `
+          <div class="qa-section-label">🔄 後續追問</div>
+          <div class="qa-followup">${qa.followUp}</div>` : ''}
+          <div class="qa-section-label">📚 設計來由與策略說明</div>
+          <div class="qa-source">${qa.source || '—'}</div>
+        </div>`;
+      grid.appendChild(card);
+    });
+  }
+
+  function toggleQA(header) {
+    header.closest('.qa-card').classList.toggle('open');
+  }
+
+  function buildFilters(list) {
+    const categories = [...new Set(list.map(q => q.category).filter(Boolean))];
+    const container = document.getElementById('qaFilters');
+    container.innerHTML = `<button class="filter-btn active" onclick="filterQA('all', this)">全部 (${list.length})</button>`;
+    categories.forEach(cat => {
+      const count = list.filter(q => q.category === cat).length;
+      const btn = document.createElement('button');
+      btn.className = 'filter-btn';
+      btn.textContent = `${cat} (${count})`;
+      btn.onclick = function() { filterQA(cat, this); };
+      container.appendChild(btn);
+    });
+  }
+
+  function filterQA(cat, btn) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const filtered = cat === 'all' ? allQA : allQA.filter(q => q.category === cat);
+    renderQA(filtered);
+  }
+
+  // ── Utils ──────────────────────────────────────────
+  function exportPDF() { window.print(); }
+
+  function resetPage() {
+    document.getElementById('result-section').classList.remove('show');
+    document.getElementById('companyUrl').value = '';
+    document.getElementById('companyName').value = '';
+    uploadedFile = null;
+    fileNameEl.textContent = '';
+    fileNameEl.classList.remove('show');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ── Keyboard shortcut ──────────────────────────────
+  document.addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') generate();
+  });
+</script>
+</body>
+</html>
