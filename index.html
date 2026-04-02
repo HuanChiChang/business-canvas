@@ -673,6 +673,12 @@
       </div>
     </div>
 
+    <!-- Extra reference links -->
+    <div class="form-group" style="margin-top:.875rem;margin-bottom:0;">
+      <label>🔗 補充參考連結（選填，每行一個）</label>
+      <textarea id="extraLinks" rows="3" placeholder="https://twincn.com/item.aspx?no=...&#10;https://www.linkedin.com/company/...&#10;（公司登記、新聞、LinkedIn 等）" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:.75rem 1rem;color:var(--text);font-size:.875rem;resize:vertical;outline:none;font-family:inherit;line-height:1.6;"></textarea>
+    </div>
+
     <!-- Generate Button -->
     <button class="btn-generate" id="generateBtn" onclick="generate()">
       <span>✨</span> <span>生成商業模式圖與業務問答</span>
@@ -850,10 +856,10 @@
     const p = getTargetProfiles()[idx];
     if (!p) return;
     document.getElementById('targetProfileLabel').value = p.label || '';
+    document.getElementById('extraLinks').value = p.extraLinks || '';
     if (p.url) { switchTab('url'); document.getElementById('companyUrl').value = p.url; }
     if (p.companyName) { switchTab('name'); document.getElementById('companyName').value = p.companyName; }
     if (p.url && p.companyName) {
-      // prefer name tab if both exist
       switchTab('name'); document.getElementById('companyName').value = p.companyName;
     }
     if (p.fileText) {
@@ -874,6 +880,7 @@
       label,
       companyName: document.getElementById('companyName').value.trim(),
       url: document.getElementById('companyUrl').value.trim(),
+      extraLinks: document.getElementById('extraLinks').value.trim(),
       fileText: targetStoredFileText || '',
       fileName: targetStoredFileName || ''
     };
@@ -1029,6 +1036,8 @@
       if (currentTab === 'name') formData.append('companyName', companyName);
       if (currentTab === 'file' && uploadedFile) formData.append('file', uploadedFile);
       else if (currentTab === 'file' && targetStoredFileText) formData.append('targetFileText', targetStoredFileText);
+      const extraLinks = document.getElementById('extraLinks').value.trim();
+      if (extraLinks) formData.append('extraLinks', extraLinks);
       if (myCompanyName) formData.append('myCompanyName', myCompanyName);
       if (myCompanyUrl) formData.append('myCompanyUrl', myCompanyUrl);
       if (myCompanyDesc) formData.append('myCompanyDesc', myCompanyDesc);
