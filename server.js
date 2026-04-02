@@ -31,6 +31,11 @@ const upload = multer({
   }
 });
 
+const uploadFields = upload.fields([
+  { name: 'file', maxCount: 1 },
+  { name: 'myFile', maxCount: 1 }
+]);
+
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(__dirname));
@@ -59,21 +64,36 @@ async function fetchUrlContent(url) {
 }
 
 // ── Main analysis endpoint ─────────────────────────────────────────────────────
-app.post('/api/analyze', upload.single('file'), async (req, res) => {
+app.post('/api/analyze', uploadFields, async (req, res) => {
   try {
-    const { companyName, url } = req.body;
+    const { companyName, url, myCompanyName, myCompanyUrl } = req.body;
+    const targetFile = req.files?.file?.[0];
+    const myFile = req.files?.myFile?.[0];
     const clientApiKey = process.env.ANTHROPIC_API_KEY;
 
     if (!clientApiKey) {
       return res.status(500).json({ error: '伺服器未設定 API Key，請聯絡管理員' });
     }
-    if (!companyName && !url && !req.file) {
+    if (!companyName && !url && !targetFile) {
       return res.status(400).json({ error: '請至少提供公司名稱、網址或上傳檔案' });
     }
 
     const client = new Anthropic({ apiKey: clientApiKey });
 
-    // Build context
+    // Build my company context
+    let myContext = '';
+    if (myCompanyName) myContext += `我方公司／產品名稱：${myCompanyName}\n`;
+    if (myCompanyUrl) {
+      myContext += `我方官網：${myCompanyUrl}\n`;
+      const myWebContent = await fetchUrlContent(myCompanyUrl);
+      if (myWebContent) myContext += `我方網頁內容：\n${myWebContent}\n`;
+    }
+    if (myFile) {
+      const myFileText = myFile.buffer.toString('utf-8').slice(0, 3000);
+      myContext += `我方簡介文件：\n${myFileText}\n`;
+    }
+
+    // Build target company context
     let context = '';
     if (companyName) context += `公司名稱：${companyName}\n`;
     if (url) {
@@ -81,15 +101,16 @@ app.post('/api/analyze', upload.single('file'), async (req, res) => {
       const webContent = await fetchUrlContent(url);
       if (webContent) context += `\n網頁內容摘要：\n${webContent}\n`;
     }
-    if (req.file) {
-      context += `\n上傳檔案名稱：${req.file.originalname}\n`;
-      const fileText = req.file.buffer.toString('utf-8').slice(0, 6000);
+    if (targetFile) {
+      context += `\n上傳檔案名稱：${targetFile.originalname}\n`;
+      const fileText = targetFile.buffer.toString('utf-8').slice(0, 6000);
       context += `檔案內容：\n${fileText}\n`;
     }
 
     const systemPrompt = `你是一位資深商業顧問兼業務策略專家，擅長商業模式分析與業務開發。
 請根據提供的公司資訊，進行深度分析並以 JSON 格式回覆，不要輸出任何 JSON 以外的文字。
 重要：所有 JSON 字串值中不得包含未跳脫的雙引號、換行符或其他控制字元。請使用完整合法的 JSON 格式。
+若有提供「我方資訊」，業務問答必須以我方的產品或服務為出發點，設計能自然帶出我方價值主張的破題問題，而非泛用型問題。
 
 JSON 結構必須完全符合以下格式：
 {
@@ -149,7 +170,9 @@ JSON 結構必須完全符合以下格式：
 qa 陣列必須包含至少 10 題，涵蓋：業務痛點(2題)、市場機會(2題)、競爭態勢(1題)、技術/產品需求(2題)、組織與決策(1題)、預算與時程(1題)、未來規劃(1題)。
 每個 source 欄位請具體說明方法論依據，例如 SPIN Selling、Solution Selling、挑戰式銷售、BANT 框架、5 Why 等。`;
 
-    const userPrompt = `請分析以下公司資訊，生成商業模式圖與業務拜訪問題：\n\n${context}`;
+    const userPrompt = `請分析以下資訊，生成商業模式圖與業務拜訪問題。
+
+${myContext ? `【我方資訊】\n${myContext}\n` : ''}【目標客戶資訊】\n${context}`;
 
     const message = await client.messages.create({
       model: 'claude-sonnet-4-6',

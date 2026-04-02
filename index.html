@@ -586,6 +586,32 @@
       <span>⚠️</span> <span id="errorMsg"></span>
     </div>
 
+    <!-- Section A: 我方資訊 -->
+    <div style="margin-bottom:1.25rem;">
+      <div style="font-size:.8rem;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem;">🙋 我方資訊（選填）</div>
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;">
+        <div class="form-group" style="margin-bottom:.75rem;">
+          <label>我代表的公司／產品名稱</label>
+          <input type="text" id="myCompanyName" placeholder="例如：gogochicken、某某科技..." />
+        </div>
+        <div class="form-group" style="margin-bottom:.75rem;">
+          <label>我方官網（選填）</label>
+          <input type="url" id="myCompanyUrl" placeholder="https://..." />
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label>上傳我方簡介 PDF（選填）</label>
+          <div class="file-drop" id="myFileDrop" style="padding:1rem;">
+            <input type="file" id="myFileInput" accept=".txt,.pdf,.doc,.docx,.html" />
+            <div class="file-drop-icon" style="font-size:1.25rem;">📎</div>
+            <p style="font-size:.8125rem;"><strong>點擊選擇</strong>或拖曳</p>
+            <div class="file-name" id="myFileName"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="font-size:.8rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem;">🎯 目標客戶資訊</div>
+
     <!-- Input Tabs -->
     <div class="tabs" role="tablist">
       <button class="tab active" onclick="switchTab('url')" id="tab-url">🌐 網址</button>
@@ -688,6 +714,7 @@
   // ── State ─────────────────────────────────────────
   let currentTab = 'url';
   let uploadedFile = null;
+  let myUploadedFile = null;
   let allQA = [];
 
   // ── Tab switching ─────────────────────────────────
@@ -699,7 +726,7 @@
     document.getElementById('content-' + tab).classList.add('active');
   }
 
-  // ── File drop ─────────────────────────────────────
+  // ── File drop (target company) ────────────────────
   const fileDrop = document.getElementById('fileDrop');
   const fileInput = document.getElementById('fileInput');
   const fileNameEl = document.getElementById('fileName');
@@ -707,18 +734,34 @@
   fileDrop.addEventListener('dragover', e => { e.preventDefault(); fileDrop.classList.add('dragover'); });
   fileDrop.addEventListener('dragleave', () => fileDrop.classList.remove('dragover'));
   fileDrop.addEventListener('drop', e => {
-    e.preventDefault();
-    fileDrop.classList.remove('dragover');
+    e.preventDefault(); fileDrop.classList.remove('dragover');
     if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
   });
-  fileInput.addEventListener('change', () => {
-    if (fileInput.files[0]) handleFile(fileInput.files[0]);
-  });
+  fileInput.addEventListener('change', () => { if (fileInput.files[0]) handleFile(fileInput.files[0]); });
 
   function handleFile(f) {
     uploadedFile = f;
     fileNameEl.textContent = '✅ ' + f.name + ' (' + (f.size / 1024).toFixed(1) + ' KB)';
     fileNameEl.classList.add('show');
+  }
+
+  // ── File drop (my company) ────────────────────────
+  const myFileDrop = document.getElementById('myFileDrop');
+  const myFileInput = document.getElementById('myFileInput');
+  const myFileNameEl = document.getElementById('myFileName');
+
+  myFileDrop.addEventListener('dragover', e => { e.preventDefault(); myFileDrop.classList.add('dragover'); });
+  myFileDrop.addEventListener('dragleave', () => myFileDrop.classList.remove('dragover'));
+  myFileDrop.addEventListener('drop', e => {
+    e.preventDefault(); myFileDrop.classList.remove('dragover');
+    if (e.dataTransfer.files[0]) handleMyFile(e.dataTransfer.files[0]);
+  });
+  myFileInput.addEventListener('change', () => { if (myFileInput.files[0]) handleMyFile(myFileInput.files[0]); });
+
+  function handleMyFile(f) {
+    myUploadedFile = f;
+    myFileNameEl.textContent = '✅ ' + f.name + ' (' + (f.size / 1024).toFixed(1) + ' KB)';
+    myFileNameEl.classList.add('show');
   }
 
   // ── Error display ─────────────────────────────────
@@ -768,10 +811,16 @@
     startLoadingSteps();
 
     try {
+      const myCompanyName = document.getElementById('myCompanyName').value.trim();
+      const myCompanyUrl = document.getElementById('myCompanyUrl').value.trim();
+
       const formData = new FormData();
       if (currentTab === 'url') formData.append('url', url);
       if (currentTab === 'name') formData.append('companyName', companyName);
       if (currentTab === 'file' && uploadedFile) formData.append('file', uploadedFile);
+      if (myCompanyName) formData.append('myCompanyName', myCompanyName);
+      if (myCompanyUrl) formData.append('myCompanyUrl', myCompanyUrl);
+      if (myUploadedFile) formData.append('myFile', myUploadedFile);
 
       const response = await fetch('/api/analyze', { method: 'POST', body: formData });
       const result = await response.json();
