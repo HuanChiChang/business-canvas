@@ -60,11 +60,11 @@ async function fetchUrlContent(url) {
 // ── Main analysis endpoint ─────────────────────────────────────────────────────
 app.post('/api/analyze', upload.single('file'), async (req, res) => {
   try {
-    const { companyName, url, apiKey } = req.body;
-    const clientApiKey = apiKey || process.env.ANTHROPIC_API_KEY;
+    const { companyName, url } = req.body;
+    const clientApiKey = process.env.ANTHROPIC_API_KEY;
 
     if (!clientApiKey) {
-      return res.status(400).json({ error: '請提供 Claude API Key' });
+      return res.status(500).json({ error: '伺服器未設定 API Key，請聯絡管理員' });
     }
     if (!companyName && !url && !req.file) {
       return res.status(400).json({ error: '請至少提供公司名稱、網址或上傳檔案' });

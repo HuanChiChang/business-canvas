@@ -584,16 +584,6 @@
       <span>⚠️</span> <span id="errorMsg"></span>
     </div>
 
-    <!-- API Key -->
-    <div class="form-group">
-      <label>Claude API Key <span style="color:var(--danger)">*</span></label>
-      <div class="api-hint">
-        <span>🔑</span>
-        <span>請輸入您的 Anthropic API Key（<a href="https://console.anthropic.com" target="_blank">前往取得</a>）。Key 僅在本機使用，不會儲存或上傳。</span>
-      </div>
-      <input type="password" id="apiKey" placeholder="sk-ant-..." />
-    </div>
-
     <!-- Input Tabs -->
     <div class="tabs" role="tablist">
       <button class="tab active" onclick="switchTab('url')" id="tab-url">🌐 網址</button>
@@ -761,11 +751,9 @@
   // ── Main generate ─────────────────────────────────
   async function generate() {
     hideError();
-    const apiKey = document.getElementById('apiKey').value.trim();
     const url = document.getElementById('companyUrl').value.trim();
     const companyName = document.getElementById('companyName').value.trim();
 
-    if (!apiKey) { showError('請輸入 Claude API Key'); return; }
     if (currentTab === 'url' && !url) { showError('請輸入公司網址'); return; }
     if (currentTab === 'name' && !companyName) { showError('請輸入公司名稱'); return; }
     if (currentTab === 'file' && !uploadedFile) { showError('請上傳檔案'); return; }
@@ -779,7 +767,6 @@
 
     try {
       const formData = new FormData();
-      formData.append('apiKey', apiKey);
       if (currentTab === 'url') formData.append('url', url);
       if (currentTab === 'name') formData.append('companyName', companyName);
       if (currentTab === 'file' && uploadedFile) formData.append('file', uploadedFile);
