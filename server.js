@@ -66,7 +66,7 @@ async function fetchUrlContent(url) {
 // ── Main analysis endpoint ─────────────────────────────────────────────────────
 app.post('/api/analyze', uploadFields, async (req, res) => {
   try {
-    const { companyName, url, myCompanyName, myCompanyUrl, myCompanyDesc } = req.body;
+    const { companyName, url, myCompanyName, myCompanyUrl, myCompanyDesc, myFileText } = req.body;
     const targetFile = req.files?.file?.[0];
     const myFile = req.files?.myFile?.[0];
     const clientApiKey = process.env.ANTHROPIC_API_KEY;
@@ -90,7 +90,9 @@ app.post('/api/analyze', uploadFields, async (req, res) => {
       if (myWebContent) myContext += `我方網頁內容：\n${myWebContent}\n`;
     }
     if (myFile) {
-      const myFileText = myFile.buffer.toString('utf-8').slice(0, 3000);
+      const myFileContent = myFile.buffer.toString('utf-8').slice(0, 3000);
+      myContext += `我方簡介文件：\n${myFileContent}\n`;
+    } else if (myFileText) {
       myContext += `我方簡介文件：\n${myFileText}\n`;
     }
 

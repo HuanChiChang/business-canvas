@@ -752,6 +752,18 @@
     document.getElementById('myCompanyName').value = p.name || '';
     document.getElementById('myCompanyUrl').value = p.url || '';
     document.getElementById('myCompanyDesc').value = p.desc || '';
+    // Restore file content indicator
+    if (p.fileText) {
+      myUploadedFile = null; // clear actual file
+      myStoredFileText = p.fileText;
+      myStoredFileName = p.fileName || '';
+      document.getElementById('myFileName').textContent = '✅ ' + myStoredFileName + '（已存）';
+      document.getElementById('myFileName').classList.add('show');
+    } else {
+      myStoredFileText = '';
+      myStoredFileName = '';
+      document.getElementById('myFileName').classList.remove('show');
+    }
   }
   function saveProfile() {
     const name = document.getElementById('myCompanyName').value.trim();
@@ -761,18 +773,31 @@
     const profile = {
       name,
       url: document.getElementById('myCompanyUrl').value.trim(),
-      desc: document.getElementById('myCompanyDesc').value.trim()
+      desc: document.getElementById('myCompanyDesc').value.trim(),
+      fileText: myStoredFileText || '',
+      fileName: myStoredFileName || ''
     };
-    if (idx !== '') {
-      profiles[idx] = profile;
-    } else {
-      profiles.push(profile);
+    // If a new file is currently uploaded, read and store its text
+    if (myUploadedFile) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        profile.fileText = e.target.result.slice(0, 4000);
+        profile.fileName = myUploadedFile.name;
+        myStoredFileText = profile.fileText;
+        myStoredFileName = profile.fileName;
+        if (idx !== '') { profiles[idx] = profile; } else { profiles.push(profile); }
+        saveProfiles(profiles);
+        refreshProfileSelect();
+        document.getElementById('myProfileSelect').value = idx !== '' ? idx : profiles.length - 1;
+        alert(`✅ 已儲存「${name}」（含檔案內容）`);
+      };
+      reader.readAsText(myUploadedFile);
+      return;
     }
+    if (idx !== '') { profiles[idx] = profile; } else { profiles.push(profile); }
     saveProfiles(profiles);
     refreshProfileSelect();
-    // Select the saved one
-    const sel = document.getElementById('myProfileSelect');
-    sel.value = idx !== '' ? idx : profiles.length - 1;
+    document.getElementById('myProfileSelect').value = idx !== '' ? idx : profiles.length - 1;
     alert(`✅ 已儲存「${name}」`);
   }
   function deleteProfile() {
@@ -793,6 +818,8 @@
   let currentTab = 'url';
   let uploadedFile = null;
   let myUploadedFile = null;
+  let myStoredFileText = '';
+  let myStoredFileName = '';
   let allQA = [];
 
   // ── Tab switching ─────────────────────────────────
@@ -901,6 +928,7 @@
       if (myCompanyUrl) formData.append('myCompanyUrl', myCompanyUrl);
       if (myCompanyDesc) formData.append('myCompanyDesc', myCompanyDesc);
       if (myUploadedFile) formData.append('myFile', myUploadedFile);
+      else if (myStoredFileText) formData.append('myFileText', myStoredFileText);
 
       const response = await fetch('/api/analyze', { method: 'POST', body: formData });
       const result = await response.json();
