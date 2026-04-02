@@ -590,13 +590,25 @@
     <div style="margin-bottom:1.25rem;">
       <div style="font-size:.8rem;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem;">🙋 我方資訊（選填）</div>
       <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;">
+        <!-- Profile selector -->
+        <div style="display:flex;gap:.5rem;margin-bottom:.875rem;">
+          <select id="myProfileSelect" onchange="loadProfile()" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.6rem .875rem;color:var(--text);font-size:.875rem;outline:none;cursor:pointer;">
+            <option value="">— 選擇已儲存的我方資料 —</option>
+          </select>
+          <button onclick="saveProfile()" style="padding:.6rem 1rem;background:var(--accent);border:none;border-radius:8px;color:#fff;font-size:.8125rem;font-weight:600;cursor:pointer;white-space:nowrap;">💾 儲存</button>
+          <button onclick="deleteProfile()" style="padding:.6rem .75rem;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--danger);font-size:.8125rem;cursor:pointer;" title="刪除選取的資料">🗑️</button>
+        </div>
         <div class="form-group" style="margin-bottom:.75rem;">
-          <label>我代表的公司／產品名稱</label>
+          <label>公司／產品名稱</label>
           <input type="text" id="myCompanyName" placeholder="例如：gogochicken、某某科技..." />
         </div>
         <div class="form-group" style="margin-bottom:.75rem;">
           <label>我方官網（選填）</label>
           <input type="url" id="myCompanyUrl" placeholder="https://..." />
+        </div>
+        <div class="form-group" style="margin-bottom:.75rem;">
+          <label>我方簡介描述（選填）</label>
+          <textarea id="myCompanyDesc" placeholder="簡短描述我方的產品、服務或價值主張..." rows="3" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:.75rem 1rem;color:var(--text);font-size:.875rem;resize:vertical;outline:none;font-family:inherit;"></textarea>
         </div>
         <div class="form-group" style="margin-bottom:0;">
           <label>上傳我方簡介 PDF（選填）</label>
@@ -711,6 +723,72 @@
 </footer>
 
 <script>
+  // ── Profile Management (localStorage) ────────────
+  const PROFILES_KEY = 'myCompanyProfiles';
+
+  function getProfiles() {
+    return JSON.parse(localStorage.getItem(PROFILES_KEY) || '[]');
+  }
+  function saveProfiles(profiles) {
+    localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles));
+  }
+  function refreshProfileSelect() {
+    const sel = document.getElementById('myProfileSelect');
+    const current = sel.value;
+    sel.innerHTML = '<option value="">— 選擇已儲存的我方資料 —</option>';
+    getProfiles().forEach((p, i) => {
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = p.name || `資料 ${i + 1}`;
+      sel.appendChild(opt);
+    });
+    if (current !== '') sel.value = current;
+  }
+  function loadProfile() {
+    const idx = document.getElementById('myProfileSelect').value;
+    if (idx === '') return;
+    const p = getProfiles()[idx];
+    if (!p) return;
+    document.getElementById('myCompanyName').value = p.name || '';
+    document.getElementById('myCompanyUrl').value = p.url || '';
+    document.getElementById('myCompanyDesc').value = p.desc || '';
+  }
+  function saveProfile() {
+    const name = document.getElementById('myCompanyName').value.trim();
+    if (!name) { alert('請先填寫公司／產品名稱'); return; }
+    const profiles = getProfiles();
+    const idx = document.getElementById('myProfileSelect').value;
+    const profile = {
+      name,
+      url: document.getElementById('myCompanyUrl').value.trim(),
+      desc: document.getElementById('myCompanyDesc').value.trim()
+    };
+    if (idx !== '') {
+      profiles[idx] = profile;
+    } else {
+      profiles.push(profile);
+    }
+    saveProfiles(profiles);
+    refreshProfileSelect();
+    // Select the saved one
+    const sel = document.getElementById('myProfileSelect');
+    sel.value = idx !== '' ? idx : profiles.length - 1;
+    alert(`✅ 已儲存「${name}」`);
+  }
+  function deleteProfile() {
+    const idx = document.getElementById('myProfileSelect').value;
+    if (idx === '') { alert('請先選擇要刪除的資料'); return; }
+    const profiles = getProfiles();
+    const name = profiles[idx]?.name || '此資料';
+    if (!confirm(`確定刪除「${name}」？`)) return;
+    profiles.splice(idx, 1);
+    saveProfiles(profiles);
+    refreshProfileSelect();
+    document.getElementById('myProfileSelect').value = '';
+  }
+  // Init on load
+  document.addEventListener('DOMContentLoaded', refreshProfileSelect);
+
   // ── State ─────────────────────────────────────────
   let currentTab = 'url';
   let uploadedFile = null;
@@ -813,6 +891,7 @@
     try {
       const myCompanyName = document.getElementById('myCompanyName').value.trim();
       const myCompanyUrl = document.getElementById('myCompanyUrl').value.trim();
+      const myCompanyDesc = document.getElementById('myCompanyDesc').value.trim();
 
       const formData = new FormData();
       if (currentTab === 'url') formData.append('url', url);
@@ -820,6 +899,7 @@
       if (currentTab === 'file' && uploadedFile) formData.append('file', uploadedFile);
       if (myCompanyName) formData.append('myCompanyName', myCompanyName);
       if (myCompanyUrl) formData.append('myCompanyUrl', myCompanyUrl);
+      if (myCompanyDesc) formData.append('myCompanyDesc', myCompanyDesc);
       if (myUploadedFile) formData.append('myFile', myUploadedFile);
 
       const response = await fetch('/api/analyze', { method: 'POST', body: formData });
